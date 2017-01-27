@@ -28,8 +28,8 @@ dependencies {
 
     compile(kotlinModule("stdlib", "1.1-M04"))
 
-    compile("com.github.elect86:glm:-SNAPSHOT")
-    compile("com.github.elect86:unofficial-opengl-SDK:62da9924f2")
+    compile("com.github.elect86:glm:191cdfeb20")
+    compile("com.github.elect86:unofficial-opengl-SDK:c0775d1a5e")
 
     val jogl = "2.3.2"
 

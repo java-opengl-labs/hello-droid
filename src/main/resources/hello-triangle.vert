@@ -1,19 +1,6 @@
-/*
- * Vertex shader.
- */
-#version 450
-// Vertex attributes
-#define POSITION    0
-#define COLOR       3
-// Uniform
-#define TRANSFORM0  1
-// Interfaces
-#define BLOCK       0
+#version 440
 
-precision highp float;
-precision highp int;
-layout(std140, column_major) uniform;
-//layout(std430, column_major) buffer;
+#include semantic.glsl
 
 layout (location = POSITION) in vec2 position; // Incoming vertex position, Model Space.
 layout (location = COLOR) in vec3 color; // Incoming vertex color.
@@ -32,8 +19,7 @@ layout (location = BLOCK) out Block
 
 void main() {
 
-    // Normally gl_Position is in Clip Space and we calculate it by multiplying
-    // it with the modelToClipMatrix.
+    // Normally gl_Position is in Clip Space and we calculate it by multiplying it with the modelToClipMatrix.
     gl_Position = transform.modelToClipMatrix * vec4(position, 0, 1);
 
     // We assign the color to the outgoing variable.

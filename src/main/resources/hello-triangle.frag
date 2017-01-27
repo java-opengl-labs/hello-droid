@@ -1,17 +1,7 @@
-/*
- * Fragment shader.
- */
-#version 450
+#version 440
 
-// Interfaces
-#define BLOCK       0
-// Output
-#define FRAG_COLOR  0
+#include semantic.glsl
 
-precision highp float;
-precision highp int;
-layout(std140, column_major) uniform;
-//layout(std430, column_major) buffer;
 
 // Incoming interpolated (between vertices) color.
 layout (location = BLOCK) in Block

@@ -14,15 +14,16 @@ import com.jogamp.opengl.util.Animator
 import com.jogamp.opengl.util.GLBuffers
 import com.jogamp.opengl.util.glsl.ShaderCode
 import com.jogamp.opengl.util.glsl.ShaderProgram
+import extensions.name
+import mat.Mat4
+import vec._2.Vec2
+import vec._3.Vec3
 import java.nio.ByteBuffer
 
 
 /**
  * Created by GBarbieri on 17.01.2017.
  */
-
-val window = GLWindow.create(GLCapabilities(GLProfile.get(GLProfile.GL4)))
-val animator = Animator(window)
 
 fun main(args: Array<String>) {
 
@@ -41,6 +42,9 @@ fun main(args: Array<String>) {
     }
     animator.start()
 }
+
+val window = GLWindow.create(GLCapabilities(GLProfile.get(GLProfile.GL4)))
+val animator = Animator(window)
 
 class HelloTriangle : GLEventListener, KeyListener {
 
@@ -68,10 +72,15 @@ class HelloTriangle : GLEventListener, KeyListener {
 
     val bufferName = GLBuffers.newDirectIntBuffer(Buffer.MAX)
     val vertexArrayName = GLBuffers.newDirectIntBuffer(1)
+
     val shaderSrc = "hello-triangle"
-    var programName = 0
+
+    lateinit var program:ShaderProgram
+
     lateinit var transformPointer: ByteBuffer
+
     var start = 0L
+
     var clearColor = GLBuffers.newDirectFloatBuffer(floatArrayOf(1f, .5f, 0f, 1f))
     var clearDepth = GLBuffers.newDirectFloatBuffer(floatArrayOf(1f))
 
@@ -83,14 +92,14 @@ class HelloTriangle : GLEventListener, KeyListener {
 
         initVertexArray(gl4)
 
-        initProgram(gl4)
+        program = ShaderProgram.create(gl4, shaderSrc)
 
         // map the transform buffer and keep it mapped
         with(gl4) {
             transformPointer = glMapNamedBufferRange(
                     bufferName[Buffer.TRANSFORM], // buffer
                     0, // offset
-                    (16 * Float.BYTES).toLong(), // size
+                    Mat4.SIZE.toLong(), // size
                     GL_MAP_WRITE_BIT or GL_MAP_PERSISTENT_BIT or GL_MAP_COHERENT_BIT or GL_MAP_INVALIDATE_BUFFER_BIT) // flags
 
             glEnable(GL_DEPTH_TEST)
@@ -115,7 +124,7 @@ class HelloTriangle : GLEventListener, KeyListener {
 
             if (!bug1287) {
 
-                glNamedBufferStorage(bufferName[Buffer.VERTEX], (vertexBuffer.capacity() * Float.BYTES).L, vertexBuffer, GL_STATIC_DRAW)
+                glNamedBufferStorage(bufferName[Buffer.VERTEX], vertexBuffer.SIZE.L, vertexBuffer, GL_STATIC_DRAW)
 
                 glNamedBufferStorage(bufferName[Buffer.ELEMENT], (elementBuffer.capacity() * Short.BYTES).L, elementBuffer, GL_STATIC_DRAW)
 
@@ -138,7 +147,7 @@ class HelloTriangle : GLEventListener, KeyListener {
 
                 val uniformBufferOffset = GLBuffers.newDirectIntBuffer(1)
                 glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, uniformBufferOffset)
-                val uniformBlockSize = glm.max(16 * Float.BYTES, uniformBufferOffset.get(0))
+                val uniformBlockSize = glm.max(Mat4.SIZE, uniformBufferOffset.get(0))
 
                 glBufferStorage(GL_UNIFORM_BUFFER, uniformBlockSize.L, null,
                         GL_MAP_WRITE_BIT or GL_MAP_PERSISTENT_BIT or GL_MAP_COHERENT_BIT)
@@ -163,33 +172,27 @@ class HelloTriangle : GLEventListener, KeyListener {
             glVertexArrayAttribBinding(vertexArrayName[0], Semantic.Attr.COLOR, Semantic.Stream._0)
 
             glVertexArrayAttribFormat(vertexArrayName[0], Semantic.Attr.POSITION, 2, GL_FLOAT, false, 0)
-            glVertexArrayAttribFormat(vertexArrayName[0], Semantic.Attr.COLOR, 3, GL_FLOAT, false, 2 * Float.BYTES) // TODO Vec2.SIZE
+            glVertexArrayAttribFormat(vertexArrayName[0], Semantic.Attr.COLOR, 3, GL_FLOAT, false, Vec2.SIZE)
 
             glEnableVertexArrayAttrib(vertexArrayName[0], Semantic.Attr.POSITION)
             glEnableVertexArrayAttrib(vertexArrayName[0], Semantic.Attr.COLOR)
 
             glVertexArrayElementBuffer(vertexArrayName[0], bufferName.get(Buffer.ELEMENT))
-            glVertexArrayVertexBuffer(vertexArrayName[0], Semantic.Stream._0, bufferName.get(Buffer.VERTEX), 0, (3 + 2) * Float.BYTES)  // TODO Vec2/3.SIZE
+            glVertexArrayVertexBuffer(vertexArrayName[0], Semantic.Stream._0, bufferName.get(Buffer.VERTEX), 0, Vec2.SIZE + Vec3.SIZE)
         }
     }
 
     fun initProgram(gl4: GL4) {
 
-        val vertShader = ShaderCode.create(gl4, GL_VERTEX_SHADER, 1,
-                arrayOf(Uri.valueOf(javaClass.getResource("$shaderSrc.vert"))), true)
-        val fragShader = ShaderCode.create(gl4, GL_FRAGMENT_SHADER, 1,
-                arrayOf(Uri.valueOf(javaClass.getResource("$shaderSrc.frag"))), true)
+        val vertShader = ShaderCode.create(gl4, GL_VERTEX_SHADER, 1, javaClass, arrayOf("$shaderSrc.vert"), false)
+        val fragShader = ShaderCode.create(gl4, GL_FRAGMENT_SHADER, 1, javaClass, arrayOf("$shaderSrc.frag"), false)
 
-        val shaderProgram = ShaderProgram()
+        program.add(vertShader)
+        program.add(fragShader)
 
-        shaderProgram.add(vertShader)
-        shaderProgram.add(fragShader)
+        program.init(gl4)
 
-        shaderProgram.init(gl4)
-
-        programName = shaderProgram.program()
-
-        shaderProgram.link(gl4, System.out)
+        program.link(gl4, System.out)
 
         vertShader.destroy(gl4)
         fragShader.destroy(gl4)
@@ -215,7 +218,7 @@ class HelloTriangle : GLEventListener, KeyListener {
 
                 transformPointer.asFloatBuffer().put(modelToClip);
             }
-            glUseProgram(programName)
+            glUseProgram(program.name)
             glBindVertexArray(vertexArrayName[0])
 
             glBindBufferBase(
@@ -245,9 +248,10 @@ class HelloTriangle : GLEventListener, KeyListener {
 
             glUnmapNamedBuffer(bufferName.get(Buffer.TRANSFORM))
 
-            glDeleteProgram(programName)
             glDeleteVertexArrays(1, vertexArrayName)
             glDeleteBuffers(Buffer.MAX, bufferName)
+
+            program.destroy(this)
         }
 
         vertexArrayName.destroy()
