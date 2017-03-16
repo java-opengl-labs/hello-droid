@@ -1,0 +1,82 @@
+
+buildscript {
+    ext.kotlin_version = '1.1.1'
+
+    repositories {
+        jcenter()
+    }
+    dependencies {
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+//        sourceCompatibility = 1.7
+//        targetCompatibility = 1.7
+    }
+
+}
+
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+apply plugin: 'kotlin-android-extensions'
+
+android {
+    compileSdkVersion 25
+    buildToolsVersion "25.0.2"
+
+    defaultConfig {
+        applicationId "org.helloTriangle_es2"
+        minSdkVersion 9
+        targetSdkVersion 25
+        versionCode 1
+        versionName "1.0"
+
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+    sourceSets {
+        main.java.srcDirs += 'src/main/kotlin'
+    }
+    packagingOptions {
+        exclude 'kotlin/**'
+        exclude 'META-INF/*.kotlin_module'
+    }
+//    compileOptions {
+//        sourceCompatibility JavaVersion.VERSION_1_7
+//        targetCompatibility JavaVersion.VERSION_1_7
+//    }
+}
+
+repositories {
+    mavenCentral()
+    maven { url 'https://jitpack.io' }
+}
+
+dependencies {
+    compile fileTree(dir: 'libs', include: ['*.jar'])
+    androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2', {
+        exclude group: 'com.android.support', module: 'support-annotations'
+    })
+    compile 'com.android.support:appcompat-v7:25.2.0'
+    testCompile 'junit:junit:4.12'
+
+    compile 'org.jogamp.jogl:jogl-all-android:2.3.2'
+
+    compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+
+
+    def joglVersion = '2.3.2'
+
+    compile "org.jogamp.gluegen:gluegen-rt-android:$joglVersion"
+    compile "org.jogamp.jogl:jogl-all-android:$joglVersion"
+
+//    compile 'com.github.elect86:uno-sdk:91790d4b53a1effed2de025ebcd87330aec2fc13'
+//    provided files('libs/gluegen-rt-natives-android-armv6.jar')
+//    compile files('libs/gluegen-rt-natives-android-armv6.jar')
+//    apk files('libs/gluegen-rt-natives-android-armv6.jar')
+//    provided files('libs/jogl-all-natives-android-armv6.jar')
+//    compile("com.github.elect86:kotlin-unsigned:f98c3d1c3ae67fffdeb667ae6105c467481cbec9")
+}
